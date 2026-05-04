@@ -7,12 +7,9 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/src/DemoCSharpAgent/DemoCSharpAgent.csproj",
-        "/property:GenerateFullPaths=true",
-        "/consoleloggerparameters:NoSummary"
+        "${workspaceFolder}"
       ],
       "problemMatcher": "$msCompile"
     }
   ]
 }
-
