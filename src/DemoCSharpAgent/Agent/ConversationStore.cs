@@ -5,21 +5,21 @@ namespace DemoCSharpAgent.Agent;
 
 public interface IConversationStore
 {
-    AgentThread? GetThread(string conversationId);
-    void SaveThread(string conversationId, AgentThread thread);
+    AgentSession? GetThread(string conversationId);
+    void SaveThread(string conversationId, AgentSession thread);
 }
 
 public sealed class InMemoryConversationStore : IConversationStore
 {
-    private readonly ConcurrentDictionary<string, AgentThread> _threads = new();
+    private readonly ConcurrentDictionary<string, AgentSession> _threads = new();
 
-    public AgentThread? GetThread(string conversationId)
+    public AgentSession? GetThread(string conversationId)
     {
         _threads.TryGetValue(conversationId, out var thread);
         return thread;
     }
 
-    public void SaveThread(string conversationId, AgentThread thread)
+    public void SaveThread(string conversationId, AgentSession thread)
     {
         _threads[conversationId] = thread;
     }

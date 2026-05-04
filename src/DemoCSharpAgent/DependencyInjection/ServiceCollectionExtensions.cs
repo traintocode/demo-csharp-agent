@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConversationStore, InMemoryConversationStore>();
         services.AddSingleton<EmailService>();
 
+        services.AddScoped<IAiToolsProvider, AiToolsProvider>();
         services.AddScoped<IAgentService, AgentService>();
 
         return services;

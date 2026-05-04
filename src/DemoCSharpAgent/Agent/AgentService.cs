@@ -2,7 +2,6 @@ using DemoCSharpAgent.Configuration;
 using DemoCSharpAgent.Dtos;
 using DemoCSharpAgent.Tools;
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI;
@@ -18,32 +17,42 @@ public interface IAgentService
 public sealed class AgentService(
     IOptions<OpenAiOptions> openAiOptions,
     IConversationStore conversationStore,
+    IAiToolsProvider toolsProvider,
     IServiceProvider serviceProvider,
     ILogger<AgentService> logger) : IAgentService
 {
+    private const string SystemPrompt =
+        "You are a helpful assistant. Use the available tools when they help answer the user.";
+
     private readonly OpenAiOptions _openAiOptions = openAiOptions.Value;
     private readonly IConversationStore _conversationStore = conversationStore;
+    private readonly IAiToolsProvider _toolsProvider = toolsProvider;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<AgentService> _logger = logger;
-    private AIAgent? _agent;
+    private ChatClientAgent? _agent;
 
-    private AIAgent GetOrCreateAgent()
+    private ChatClientAgent GetOrCreateAgent()
     {
         if (_agent is not null)
             return _agent;
 
-        var tools = _serviceProvider.GetTools().ToArray();
+        var tools = _toolsProvider.Tools;
         _logger.LogDebug(
             "Registered {ToolCount} tools: {ToolNames}",
-            tools.Length,
+            tools.Count,
             string.Join(", ", tools.Select(t => t.Name)));
 
         var openAiClient = new OpenAIClient(_openAiOptions.ApiKey);
         var chatClient = openAiClient.GetChatClient(_openAiOptions.Model);
 
-        _agent = chatClient.CreateAIAgent(
-            instructions: _openAiOptions.SystemPrompt,
-            tools: tools);
+        _agent = chatClient.AsAIAgent(
+            instructions: SystemPrompt,
+            name: null,
+            description: null,
+            tools: tools,
+            clientFactory: null,
+            loggerFactory: null,
+            services: _serviceProvider);
 
         return _agent;
     }
@@ -60,15 +69,15 @@ public sealed class AgentService(
         {
             var agent = GetOrCreateAgent();
 
-            var thread = _conversationStore.GetThread(conversationId);
-            if (thread == null)
+            var session = _conversationStore.GetThread(conversationId);
+            if (session == null)
             {
-                thread = agent.GetNewThread();
-                _conversationStore.SaveThread(conversationId, thread);
+                session = await agent.CreateSessionAsync(timeoutToken);
+                _conversationStore.SaveThread(conversationId, session);
             }
 
-            var runOptions = new AgentRunOptions();
-            var result = await agent.RunAsync(request.Message, thread, options: runOptions, cancellationToken: timeoutToken);
+            var runOptions = new ChatClientAgentRunOptions();
+            var result = await agent.RunAsync(request.Message, session, runOptions, timeoutToken);
 
             var responseText = result.Text ?? "I apologize, but I wasn't able to generate a response.";
 
