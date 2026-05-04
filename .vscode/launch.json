@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Launch (console)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/DemoCSharpAgent/bin/Debug/net10.0/DemoCSharpAgent.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/DemoCSharpAgent",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "env": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "OpenAI__ApiKey": "<OPENAI_API_KEY>"
+      }
+    },
+    {
+      "name": ".NET Core Attach",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
