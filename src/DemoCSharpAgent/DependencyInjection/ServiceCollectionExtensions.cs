@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
         services.Configure<OpenAiOptions>(configuration.GetSection(OpenAiOptions.SectionName));
         services.Configure<WeatherApiOptions>(configuration.GetSection(WeatherApiOptions.SectionName));
 
-        services.AddHttpClient<IWeatherService, WeatherApiDotComService>();
+        services.AddHttpClient<IWeatherService, WeatherService>();
 
         services.AddSingleton<IConversationStore, InMemoryConversationStore>();
         services.AddSingleton<EmailService>();

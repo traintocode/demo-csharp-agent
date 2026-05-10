@@ -1,10 +1,19 @@
 using System.Text.Json;
+using System.ComponentModel;
 using DemoCSharpAgent.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace DemoCSharpAgent.Tools;
 
-public class WeatherApiDotComService(HttpClient httpClient, IOptions<WeatherApiOptions> weatherOptions) : IWeatherService
+public interface IWeatherService
+{
+    Task<string[]> GetWeatherInCity(
+        [Description("City to get the current weather for (e.g., \"London\" or \"Paris, FR\").")]
+        string city,
+        CancellationToken cancellationToken = default);
+}
+
+public class WeatherService(HttpClient httpClient, IOptions<WeatherApiOptions> weatherOptions) : IWeatherService
 {
     private readonly HttpClient _httpClient = httpClient;
     private readonly WeatherApiOptions _options = weatherOptions.Value;

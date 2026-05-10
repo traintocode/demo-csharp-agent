@@ -11,7 +11,7 @@ namespace DemoCSharpAgent.Agent;
 
 public interface IAgentService
 {
-    Task<Dtos.ChatResponse> ProcessAsync(ChatRequest request, CancellationToken cancellationToken = default);
+    Task<ChatResponse> ProcessAsync(ChatRequest request, CancellationToken cancellationToken = default);
 }
 
 public sealed class AgentService(
@@ -57,7 +57,7 @@ public sealed class AgentService(
         return _agent;
     }
 
-    public async Task<Dtos.ChatResponse> ProcessAsync(ChatRequest request, CancellationToken cancellationToken = default)
+    public async Task<ChatResponse> ProcessAsync(ChatRequest request, CancellationToken cancellationToken = default)
     {
         var conversationId = request.ConversationId ?? Guid.NewGuid().ToString("N");
 
@@ -85,7 +85,7 @@ public sealed class AgentService(
                 "Agent completed. Response: {Response}",
                 responseText);
 
-            return new Dtos.ChatResponse
+            return new ChatResponse
             {
                 Answer = responseText,
                 ConversationId = conversationId,
