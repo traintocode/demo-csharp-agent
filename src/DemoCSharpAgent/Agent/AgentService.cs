@@ -1,11 +1,8 @@
 using DemoCSharpAgent.Configuration;
 using DemoCSharpAgent.Dtos;
-using DemoCSharpAgent.Tools;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OpenAI;
-using OpenAI.Chat;
 
 namespace DemoCSharpAgent.Agent;
 
@@ -17,45 +14,13 @@ public interface IAgentService
 public sealed class AgentService(
     IOptions<OpenAiOptions> openAiOptions,
     IConversationStore conversationStore,
-    IAiToolsProvider toolsProvider,
-    IServiceProvider serviceProvider,
+    ChatClientAgent agent,
     ILogger<AgentService> logger) : IAgentService
 {
-    private const string SystemPrompt =
-        "You are a helpful assistant. Use the available tools when they help answer the user.";
-
     private readonly OpenAiOptions _openAiOptions = openAiOptions.Value;
     private readonly IConversationStore _conversationStore = conversationStore;
-    private readonly IAiToolsProvider _toolsProvider = toolsProvider;
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly ChatClientAgent _agent = agent;
     private readonly ILogger<AgentService> _logger = logger;
-    private ChatClientAgent? _agent;
-
-    private ChatClientAgent GetOrCreateAgent()
-    {
-        if (_agent is not null)
-            return _agent;
-
-        var tools = _toolsProvider.Tools;
-        _logger.LogDebug(
-            "Registered {ToolCount} tools: {ToolNames}",
-            tools.Count,
-            string.Join(", ", tools.Select(t => t.Name)));
-
-        var openAiClient = new OpenAIClient(_openAiOptions.ApiKey);
-        var chatClient = openAiClient.GetChatClient(_openAiOptions.Model);
-
-        _agent = chatClient.AsAIAgent(
-            instructions: SystemPrompt,
-            name: null,
-            description: null,
-            tools: tools,
-            clientFactory: null,
-            loggerFactory: null,
-            services: _serviceProvider);
-
-        return _agent;
-    }
 
     public async Task<ChatResponse> ProcessAsync(ChatRequest request, CancellationToken cancellationToken = default)
     {
@@ -67,17 +32,15 @@ public sealed class AgentService(
 
         try
         {
-            var agent = GetOrCreateAgent();
-
             var session = _conversationStore.GetThread(conversationId);
             if (session == null)
             {
-                session = await agent.CreateSessionAsync(timeoutToken);
+                session = await _agent.CreateSessionAsync(timeoutToken);
                 _conversationStore.SaveThread(conversationId, session);
             }
 
             var runOptions = new ChatClientAgentRunOptions();
-            var result = await agent.RunAsync(request.Message, session, runOptions, timeoutToken);
+            var result = await _agent.RunAsync(request.Message, session, runOptions, timeoutToken);
 
             var responseText = result.Text ?? "I apologize, but I wasn't able to generate a response.";
 
